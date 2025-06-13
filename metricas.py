@@ -6,6 +6,11 @@ url = "https://docs.google.com/spreadsheets/d/1YQBQ3bu1TCmgrRch1gzW5O4Jgc8huzUSr
 df = pd.read_csv(url)
 df.head()
 
+df.columns
+# %%
+
+df['Posição da cadeira (senioridade)'].sort_values().unique()
+
 # %%
 df = df.replace({"Sim":1, "Não":0})
 
@@ -117,3 +122,9 @@ plt.legend([
 ])
 
 # %%
+
+pd.Series({"model": reg, "features":features}).to_pickle("model_feliz.pkl")
+# %%
+
+
+df_analise.columns
