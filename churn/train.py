@@ -9,8 +9,6 @@ df.head()
 
 # %%
 oot =  df[df["dtRef"]==df['dtRef'].max()].copy()
-
-# %%
 df_train = df[df["dtRef"]<df['dtRef'].max()].copy()
 
 # %%
@@ -62,8 +60,6 @@ import matplotlib.pyplot as plt
 arvore = tree.DecisionTreeClassifier(random_state=42)
 arvore.fit(X_train, y_train)
 
-# %%
-
 feature_importances = (pd.Series(arvore.feature_importances_,
                                  index=X_train.columns)
                          .sort_values(ascending=False)
@@ -81,11 +77,12 @@ best_features = (feature_importances[feature_importances['acum.'] < 0.96]['index
 best_features
 
 # %%
-
 # MODIFY
 
-from feature_engine import discretisation
+from feature_engine import discretisation, encoding
+from sklearn import pipeline
 
+## Discretizar
 tree_discretization = discretisation.DecisionTreeDiscretiser(
     variables=best_features,
     regression=False,
@@ -93,47 +90,100 @@ tree_discretization = discretisation.DecisionTreeDiscretiser(
     cv=3,
 )
 
-tree_discretization.fit(X_train[best_features], y_train)
+# Onehot
+onehot = encoding.OneHotEncoder(variables=best_features, ignore_format=True)
 
-X_train_transform = tree_discretization.transform(X_train[best_features])
-X_train_transform
 
 # %%
 # MODEL
 from sklearn import linear_model
+from sklearn import naive_bayes
+from sklearn import ensemble
 
-reg = linear_model.LogisticRegression(penalty=None, random_state=42, max_iter=1000000)
-reg.fit(X_train_transform, y_train)
+# model = linear_model.LogisticRegression(penalty=None, random_state=42, max_iter=1000000)
+# model = naive_bayes.BernoulliNB()
+# model = ensemble.RandomForestClassifier(random_state=42,
+#                                         min_samples_leaf=20,
+#                                         n_jobs=-1,
+#                                         n_estimators=500,
+#                                         )
 
-# %%
+# model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=20)
+
+model = ensemble.AdaBoostClassifier(random_state=42,
+                                    n_estimators=500,
+                                    learning_rate=0.99)
+
+model_pipeline = pipeline.Pipeline(
+    steps=[
+        ('Discretizar', tree_discretization),
+        ('Onehot', onehot),
+        ('Model',model), 
+    ]
+)
+
+import mlflow
 from sklearn import metrics
 
-y_train_predict = reg.predict(X_train_transform)
-y_train_proba = reg.predict_proba(X_train_transform)[:,1]
+mlflow.set_tracking_uri("http://127.0.0.1:5000/")
+mlflow.set_experiment(experiment_name='churn_exp')
 
-acc_train = metrics.accuracy_score(y_train, y_train_predict)
-auc_train = metrics.roc_auc_score(y_train, y_train_proba)
-print("Acurácia Treino:", acc_train)
-print("AUC Treino:", auc_train)
+with mlflow.start_run(run_name=model.__str__()):
+    mlflow.sklearn.autolog()
 
+    model_pipeline.fit(X_train[best_features], y_train)
 
-X_test_transform = tree_discretization.transform(X_test[best_features])
+    y_train_predict = model_pipeline.predict(X_train[best_features])
+    y_train_proba = model_pipeline.predict_proba(X_train[best_features])[:,1]
 
-y_test_predict = reg.predict(X_test_transform)
-y_test_proba = reg.predict_proba(X_test_transform)[:,1]
+    acc_train = metrics.accuracy_score(y_train, y_train_predict)
+    auc_train = metrics.roc_auc_score(y_train, y_train_proba)
+    roc_train = metrics.roc_curve(y_train, y_train_proba)
+    print("Acurácia Treino:", acc_train)
+    print("AUC Treino:", auc_train)
 
-acc_test = metrics.accuracy_score(y_test, y_test_predict)
-auc_test = metrics.roc_auc_score(y_test, y_test_proba)
-print("Acurácia Test:", acc_test)
-print("AUC Test:", auc_test)
+    y_test_predict = model_pipeline.predict(X_test[best_features])
+    y_test_proba = model_pipeline.predict_proba(X_test[best_features])[:,1]
 
-oot_transform = tree_discretization.transform(oot[best_features])
+    acc_test = metrics.accuracy_score(y_test, y_test_predict)
+    auc_test = metrics.roc_auc_score(y_test, y_test_proba)
+    roc_test = metrics.roc_curve(y_test, y_test_proba)
+    print("Acurácia Test:", acc_test)
+    print("AUC Test:", auc_test)
 
-y_oot_predict = reg.predict(oot_transform)
-y_oot_proba = reg.predict_proba(oot_transform)[:,1]
+    y_oot_predict = model_pipeline.predict(oot[best_features])
+    y_oot_proba = model_pipeline.predict_proba(oot[best_features])[:,1]
 
-acc_oot = metrics.accuracy_score(oot[target], y_oot_predict)
-auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
-print("Acurácia oot:", acc_oot)
-print("AUC oot:", auc_oot)
+    acc_oot = metrics.accuracy_score(oot[target], y_oot_predict)
+    auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
+    roc_oot = metrics.roc_curve(oot[target], y_oot_proba)
+    print("Acurácia oot:", acc_oot)
+    print("AUC oot:", auc_oot)
+
+    mlflow.log_metrics({
+    "acc_train":acc_train,
+    "auc_train":auc_train,
+    "acc_test":acc_test,
+    "auc_test":auc_test,
+    "acc_oot":acc_oot,
+    "auc_oot":auc_oot,
+    })
+
 # %%
+
+plt.figure(dpi=400)
+plt.plot(roc_train[0], roc_train[1])
+plt.plot(roc_test[0], roc_test[1])
+plt.plot(roc_oot[0], roc_oot[1])
+plt.plot([0,1], [0,1], '--', color='black')
+plt.grid(True)
+plt.ylabel("Sensibilidade")
+plt.xlabel("1 - Especificidade")
+plt.title("Curva ROC")
+plt.legend([
+    f"Treino: {100*auc_train:.2f}",
+    f"Teste: {100*auc_test:.2f}",
+    f"Out-of-Time: {100*auc_oot:.2f}",
+])
+# %%
+
