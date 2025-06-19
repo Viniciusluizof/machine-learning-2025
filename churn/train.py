@@ -1,6 +1,21 @@
 # %%
 import pandas as pd
 
+from sklearn import tree
+from sklearn import model_selection
+from sklearn import ensemble
+from sklearn import pipeline
+from sklearn import metrics
+
+import mlflow
+
+from feature_engine import discretisation, encoding
+
+import matplotlib.pyplot as plt
+
+mlflow.set_tracking_uri("http://127.0.0.1:5000/")
+mlflow.set_experiment(experiment_id='690495133568641886')
+
 pd.options.display.max_columns = 500
 pd.options.display.max_rows = 500
 
@@ -24,8 +39,6 @@ X, y = df_train[features], df_train[target]
 
 # %%
 # SAMPLE
-
-from sklearn import model_selection
 
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y,
                                                                     random_state=42,
@@ -54,9 +67,6 @@ summario.sort_values(by=['diff_rel'], ascending=False)
 
 # %%
 
-from sklearn import tree
-import matplotlib.pyplot as plt
-
 arvore = tree.DecisionTreeClassifier(random_state=42)
 arvore.fit(X_train, y_train)
 
@@ -79,9 +89,6 @@ best_features
 # %%
 # MODIFY
 
-from feature_engine import discretisation, encoding
-from sklearn import pipeline
-
 ## Discretizar
 tree_discretization = discretisation.DecisionTreeDiscretiser(
     variables=best_features,
@@ -96,43 +103,40 @@ onehot = encoding.OneHotEncoder(variables=best_features, ignore_format=True)
 
 # %%
 # MODEL
-from sklearn import linear_model
-from sklearn import naive_bayes
-from sklearn import ensemble
 
-# model = linear_model.LogisticRegression(penalty=None, random_state=42, max_iter=1000000)
-# model = naive_bayes.BernoulliNB()
-# model = ensemble.RandomForestClassifier(random_state=42,
-#                                         min_samples_leaf=20,
-#                                         n_jobs=-1,
-#                                         n_estimators=500,
-#                                         )
+with mlflow.start_run():
 
-# model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=20)
-
-model = ensemble.AdaBoostClassifier(random_state=42,
-                                    n_estimators=500,
-                                    learning_rate=0.99)
-
-model_pipeline = pipeline.Pipeline(
-    steps=[
-        ('Discretizar', tree_discretization),
-        ('Onehot', onehot),
-        ('Model',model), 
-    ]
-)
-
-import mlflow
-from sklearn import metrics
-
-mlflow.set_tracking_uri("http://127.0.0.1:5000/")
-mlflow.set_experiment(experiment_name='churn_exp')
-
-with mlflow.start_run(run_name=model.__str__()):
     mlflow.sklearn.autolog()
+
+    model = ensemble.RandomForestClassifier(
+        random_state=42,
+        n_jobs=2,
+    )
+
+    params = {
+        "min_samples_leaf":[15,20,25,30,50],
+        "n_estimators":[100,200,500,1000],
+        "criterion":['gini', 'entropy', 'log_loss'],
+    }
+
+    grid = model_selection.GridSearchCV(model,
+                                        params,
+                                        cv=3,
+                                        scoring='roc_auc',
+                                        verbose=4,
+                                        )
+
+    model_pipeline = pipeline.Pipeline(
+        steps=[
+            ('Discretizar', tree_discretization),
+            ('Onehot', onehot),
+            ('Grid',grid), 
+        ]
+    )
 
     model_pipeline.fit(X_train[best_features], y_train)
 
+    ## ASSESS
     y_train_predict = model_pipeline.predict(X_train[best_features])
     y_train_proba = model_pipeline.predict_proba(X_train[best_features])[:,1]
 
@@ -185,5 +189,5 @@ plt.legend([
     f"Teste: {100*auc_test:.2f}",
     f"Out-of-Time: {100*auc_oot:.2f}",
 ])
-# %%
 
+plt.show()
