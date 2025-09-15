@@ -78,7 +78,7 @@ plt.legend(['Observado',
             'Arvore Depth = 2'])
 plt.show()
 # %%
-
+# Aqui mostra a arvore de decisão como ela foi construida
 plt.figure(dpi=400)
 tree.plot_tree(arvore_d2,
                feature_names=['cerveja'],
