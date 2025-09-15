@@ -73,3 +73,16 @@ df_predict
 
 pd.crosstab(df_predict['valor_verdadeiro'],df_predict['predict_arvore'])
 # %%
+
+from sklearn import metrics
+
+acc_arvore =  metrics.accuracy_score(df_predict['valor_verdadeiro'], df_predict['predict_arvore'])
+precisao_arvore = metrics.precision_score(df_predict['valor_verdadeiro'], df_predict['predict_arvore'])
+recall_arvore = metrics.recall_score(df_predict['valor_verdadeiro'], df_predict['predict_arvore'])
+roc = metrics.roc_curve(df_predict['valor_verdadeiro'], df_predict['predict_arvore'])
+
+# %%
+import matplotlib.pyplot as plt
+
+plt.plot(roc[0],roc[1])
+# %%
