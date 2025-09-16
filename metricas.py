@@ -85,4 +85,3 @@ roc = metrics.roc_curve(df_predict['valor_verdadeiro'], df_predict['predict_arvo
 import matplotlib.pyplot as plt
 
 plt.plot(roc[0],roc[1])
-# %%
