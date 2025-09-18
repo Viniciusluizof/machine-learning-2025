@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-model = pd.read_pickle
+model = pd.read_pickle("model_feliz.pkl")
 
 st.markdown("# Descubra a felicidade")
 
@@ -142,4 +142,11 @@ df_template = pd.DataFrame(columns=['Como conheceu o Téo Me Why?_Amigos',
 
 df = pd.concat([df_template,df]).fillna(0)
 
-st.dataframe(df)
+proba = model["model"].predict_proba(df[model['features']])[:,1][0]
+
+if proba >0.7:
+    st.success(f"Você é uma pessoa feliz! Probabilidade: {proba * 100:.0f}%")
+elif proba >0.4:
+    st.warning(f"Você é uma pessoa meio feliz! Probabilidade: {proba * 100:.0f}%")
+elif proba <= 0.4:
+    st.error(f"Você  NÃO é uma pessoa meio feliz! Probabilidade: {proba * 100:.0f}%")
