@@ -1,4 +1,7 @@
 import streamlit as st
+import pandas as pd
+
+model = pd.read_pickle
 
 st.markdown("# Descubra a felicidade")
 
@@ -68,18 +71,75 @@ senioridade_opt = [
 
 senioridade = st.selectbox("Posição da cadeira (senioridade)",options=senioridade_opt)
 
-"""
-features = [
-    redes, 
-    cursos,
-    video_game, 
-    futebol, 
-    livros, 
-    board_game, 
-    f1, 
-    mma, 
-    idade, 
-    estado, 
-    formacao,
-    temp_dados,
-    senioridade]"""
+data = { 
+        'Como conheceu o Téo Me Why?' :redes,
+        'Quantos cursos acompanhou do Téo Me Why?': cursos, 
+        'Curte games?':video_game,
+        'Curte futebol?':futebol, 
+        'Curte livros?': livros, 
+        'Curte jogos de tabuleiro?': board_game,
+        'Curte jogos de fórmula 1?': f1, 
+        'Curte jogos de MMA?':mma, 
+        'Idade':idade,
+        'Estado que mora atualmente':estado, 
+        'Área de Formação':formacao,
+        'Tempo que atua na área de dados':temp_dados, 
+        'Posição da cadeira (senioridade)':senioridade}
+
+df = pd.DataFrame([data])
+
+dummy_vars = [
+    "Como conheceu o Téo Me Why?",
+    "Quantos cursos acompanhou do Téo Me Why?",
+    "Estado que mora atualmente",
+    "Área de Formação",
+    "Tempo que atua na área de dados",
+    "Posição da cadeira (senioridade)",
+]
+
+df =pd.get_dummies(df[dummy_vars]).astype(int)
+
+df_template = pd.DataFrame(columns=['Como conheceu o Téo Me Why?_Amigos',
+       'Como conheceu o Téo Me Why?_Instagram',
+       'Como conheceu o Téo Me Why?_LinkedIn',
+       'Como conheceu o Téo Me Why?_Outra rede social',
+       'Como conheceu o Téo Me Why?_Twitch',
+       'Como conheceu o Téo Me Why?_Twitter / X',
+       'Como conheceu o Téo Me Why?_YouTube',
+       'Quantos cursos acompanhou do Téo Me Why?_0',
+       'Quantos cursos acompanhou do Téo Me Why?_1',
+       'Quantos cursos acompanhou do Téo Me Why?_2',
+       'Quantos cursos acompanhou do Téo Me Why?_3',
+       'Quantos cursos acompanhou do Téo Me Why?_Mais que 3',
+       'Estado que mora atualmente_AM', 'Estado que mora atualmente_BA',
+       'Estado que mora atualmente_CE', 'Estado que mora atualmente_DF',
+       'Estado que mora atualmente_ES', 'Estado que mora atualmente_GO',
+       'Estado que mora atualmente_MA', 'Estado que mora atualmente_MG',
+       'Estado que mora atualmente_MT', 'Estado que mora atualmente_PA',
+       'Estado que mora atualmente_PB', 'Estado que mora atualmente_PE',
+       'Estado que mora atualmente_PR', 'Estado que mora atualmente_RJ',
+       'Estado que mora atualmente_RN', 'Estado que mora atualmente_RS',
+       'Estado que mora atualmente_SC', 'Estado que mora atualmente_SP',
+       'Área de Formação_Biológicas', 'Área de Formação_Exatas',
+       'Área de Formação_Humanas',
+       'Tempo que atua na área de dados_De 0 a 6 meses',
+       'Tempo que atua na área de dados_De 1 ano a 2 anos',
+       'Tempo que atua na área de dados_De 6 meses a 1 ano',
+       'Tempo que atua na área de dados_Mais de 4 anos',
+       'Tempo que atua na área de dados_Não atuo',
+       'Tempo que atua na área de dados_de 2 anos a 4 anos',
+       'Posição da cadeira (senioridade)_C-Level',
+       'Posição da cadeira (senioridade)_Coordenação',
+       'Posição da cadeira (senioridade)_Diretoria',
+       'Posição da cadeira (senioridade)_Especialista',
+       'Posição da cadeira (senioridade)_Gerência',
+       'Posição da cadeira (senioridade)_Iniciante',
+       'Posição da cadeira (senioridade)_Júnior',
+       'Posição da cadeira (senioridade)_Pleno',
+       'Posição da cadeira (senioridade)_Sênior', 'Curte games?',
+       'Curte futebol?', 'Curte livros?', 'Curte jogos de tabuleiro?',
+       'Curte jogos de fórmula 1?', 'Curte jogos de MMA?', 'Idade'])
+
+df = pd.concat([df_template,df]).fillna(0)
+
+st.dataframe(df)
