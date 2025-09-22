@@ -1,0 +1,49 @@
+# Aprndizado de maquinha
+
+- Não supervisionado
+Aqui não temos uma variavel resposta
+
+    -> Clustering 
+    -> Market Basket
+
+- Supervisionado
+Busca prever aluma variariável(target) com base num conjunto de informações
+
+    -> Classificação
+    -> Regressão
+
+
+## Regressão
+Problemas de regressão são voltados à estimativa alvo(target), supervisionado
+este um número, valor. Por exemplo:
+
+- Quantidade de vendas
+- Receita presumida
+- Valor de crédito
+- Precificação de imóvel
+- Volume de chuva
+
+## Classificação
+Problemas de regressão são voltados à estimativa(alvo), sendo este um rótulo ou classe,
+por exemplo:
+
+- Compradores vc Não Compradores
+- Churn vc Não Churn
+- Reconhecimento facial
+- Inadimplente vc Adimplente
+- Diagnóstico de cancêr
+- Gravidez
+
+# O Cliclo Analítico
+processo estruturado para resolver problemas e tomar decisões usando dados, 
+que geralmente inclui etapas como definição do problema, 
+coleta e preparação dos dados, exploração e análise dos dados, a
+valiação das hipóteses, e tomada de decisão
+
+                ETL
+Fonte de Dados -----> Analytical Base Table -----> Modelagem -----> Produção
+                |                                     |               |
+                |---------------------------------------------------- |
+                                            Score
+
+Analytical Base Table: Cada linha representa a entidade que você quer modelar
