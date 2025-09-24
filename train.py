@@ -87,3 +87,79 @@ feature_importance = pd.Series(arvore.feature_importances_, index=X_train.column
 feature_importance['acumum.'] = feature_importance[0].cumsum()
 feature_importance
 # %%
+best_features = feature_importance[feature_importance['acumum.']< 0.96]['index'].tolist()
+best_features
+# %%
+
+# MODIFY
+
+# Padronização - os dados precisam estar na mesma escala
+# Pre-processing
+'''
+Nomalização
+- Pegar a media, subtrair os valores da media e dividir por sigma
+
+padronização min max
+- Pega o x1 menos min(x1) dividido por (max(x1)-min(x1))
+'''
+
+from feature_engine import discretisation
+
+tree_discr = discretisation.DecisionTreeDiscretiser(variables=best_features, 
+                                                    regression=False, 
+                                                    bin_output='bin_number',
+                                                    cv=3)
+tree_discr.fit(X_train[best_features],y_train)
+# %%
+X_train_transf = tree_discr.transform(X_train[best_features])
+
+X_train_transf
+# %%
+# MODEL 
+
+from sklearn import linear_model
+
+reg = linear_model.LogisticRegression(penalty=None, random_state=42,max_iter=100000)
+reg.fit(X_train_transf,y_train)
+# %%
+# ASSESS
+
+from sklearn import metrics
+
+#Aqui é na lista de exercicio
+y_train_predic = reg.predict(X_train_transf)
+y_train_proba = reg.predict_proba(X_train_transf)[:,1]
+
+acc_train = metrics.accuracy_score(y_train, y_train_predic)
+auc_train = metrics.roc_auc_score(y_train, y_train_proba)
+
+print("Acuracia Treino", acc_train)
+print("AUC Treino",auc_train)
+
+
+# Aqui é a prova
+
+X_test_transf = tree_discr.transform(X_test[best_features])
+
+y_test_predic = reg.predict(X_test_transf)
+y_test_proba = reg.predict_proba(X_test_transf)[:,1]
+
+acc_test = metrics.accuracy_score(y_test, y_test_predic)
+auc_test = metrics.roc_auc_score(y_test, y_test_proba)
+
+print("Acuracia Teste", acc_test)
+print("AUC Teste",auc_test)
+
+# OOT
+
+oot_transf = tree_discr.transform(oot[best_features])
+
+y_oot_predic = reg.predict(oot_transf)
+y_oot_proba = reg.predict_proba(oot_transf)[:,1]
+
+acc_oot = metrics.accuracy_score(oot[target], y_oot_predic)
+auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
+
+print("Acuracia oote", acc_oot)
+print("AUC oote",auc_oot)
+# %%
