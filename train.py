@@ -144,48 +144,65 @@ model_pipeline = pipeline.Pipeline(
     ]
 )
 
-model_pipeline.fit(X_train,y_train)
-# %%
-# ASSESS
-
+import mlflow
 from sklearn import metrics
 
+mlflow.set_tracking_uri('http://127.0.0.1:5000/')
+mlflow.set_experiment(experiment_id=196164843398636059)
+
+with mlflow.start_run(run_name=model.__str__()):
+    mlflow.sklearn.autolog()
+    model_pipeline.fit(X_train[best_features],y_train)
+
+# ASSESS
+
+
 #Aqui é na lista de exercicio
-y_train_predic = model_pipeline.predict(X_train)
-y_train_proba = model_pipeline.predict_proba(X_train)[:,1]
+    y_train_predic = model_pipeline.predict(X_train[best_features])
+    y_train_proba = model_pipeline.predict_proba(X_train[best_features])[:,1]
 
-acc_train = metrics.accuracy_score(y_train, y_train_predic)
-auc_train = metrics.roc_auc_score(y_train, y_train_proba)
-roc_train = metrics.roc_curve(y_train,y_train_proba)
+    acc_train = metrics.accuracy_score(y_train, y_train_predic)
+    auc_train = metrics.roc_auc_score(y_train, y_train_proba)
+    roc_train = metrics.roc_curve(y_train,y_train_proba)
 
-print("Acuracia Treino", acc_train)
-print("AUC Treino",auc_train)
-
-
-# Aqui é a prova
-
-y_test_predic = model_pipeline.predict(X_test)
-y_test_proba = model_pipeline.predict_proba(X_test)[:,1]
-
-acc_test = metrics.accuracy_score(y_test, y_test_predic)
-auc_test = metrics.roc_auc_score(y_test, y_test_proba)
-roc_teste = metrics.roc_curve(y_test,y_test_proba)
+    print("Acuracia Treino", acc_train)
+    print("AUC Treino",auc_train)
 
 
-print("Acuracia Teste", acc_test)
-print("AUC Teste",auc_test)
+    # Aqui é a prova
 
-# OOT
+    y_test_predic = model_pipeline.predict(X_test[best_features])
+    y_test_proba = model_pipeline.predict_proba(X_test[best_features])[:,1]
 
-y_oot_predic = model_pipeline.predict(oot[features])
-y_oot_proba = model_pipeline.predict_proba(oot[features])[:,1]
+    acc_test = metrics.accuracy_score(y_test, y_test_predic)
+    auc_test = metrics.roc_auc_score(y_test, y_test_proba)
+    roc_teste = metrics.roc_curve(y_test,y_test_proba)
 
-acc_oot = metrics.accuracy_score(oot[target], y_oot_predic)
-auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
-roc_oot = metrics.roc_curve(oot[target],y_oot_proba)
 
-print("Acuracia oote", acc_oot)
-print("AUC oote",auc_oot)
+    print("Acuracia Teste", acc_test)
+    print("AUC Teste",auc_test)
+
+    # OOT
+
+    y_oot_predic = model_pipeline.predict(oot[best_features])
+    y_oot_proba = model_pipeline.predict_proba(oot[best_features])[:,1]
+
+    acc_oot = metrics.accuracy_score(oot[target], y_oot_predic)
+    auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
+    roc_oot = metrics.roc_curve(oot[target],y_oot_proba)
+
+    print("Acuracia oote", acc_oot)
+    print("AUC oote",auc_oot)
+
+    mlflow.log_metrics({
+    "acc_train":acc_train,
+    "auc_train":auc_train,
+    "acc_test":acc_test,
+    "auc_test":auc_test,
+    "acc_oot":acc_oot,
+    "auc_oot":auc_oot
+    }
+    )
 # %%
 plt.figure(dpi=400)
 plt.plot(roc_train[0],roc_train[1])
