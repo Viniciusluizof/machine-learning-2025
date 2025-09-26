@@ -103,35 +103,60 @@ padronização min max
 - Pega o x1 menos min(x1) dividido por (max(x1)-min(x1))
 '''
 
-from feature_engine import discretisation
+from feature_engine import discretisation, encoding
+from sklearn import pipeline
 
 tree_discr = discretisation.DecisionTreeDiscretiser(variables=best_features, 
                                                     regression=False, 
                                                     bin_output='bin_number',
                                                     cv=3)
-tree_discr.fit(X_train[best_features],y_train)
-# %%
-X_train_transf = tree_discr.transform(X_train[best_features])
 
-X_train_transf
+# Onehot
+onehot = encoding.OneHotEncoder(variables=best_features,ignore_format=True)
+
 # %%
 # MODEL 
 
 from sklearn import linear_model
+from sklearn import naive_bayes
+from sklearn import ensemble
 
-reg = linear_model.LogisticRegression(penalty=None, random_state=42,max_iter=100000)
-reg.fit(X_train_transf,y_train)
+# model = linear_model.LogisticRegression(penalty=None, random_state=42,max_iter=100000)
+# model = naive_bayes.BernoulliNB()
+# model = ensemble.RandomForestClassifier(random_state=42,
+#                                         min_samples_leaf=20
+#                                         n_jobs=-1,
+#                                         n_estimators=500
+#                                         )
+# model = tree.DecisionTreeClassifier(random_state=42,min_samples_leaf=20)
+model = ensemble.AdaBoostClassifier(random_state=42,
+                                    n_estimators=500,
+                                    learning_rate=0.99)
+
+
+
+
+model_pipeline = pipeline.Pipeline(
+    steps=[
+        ('Discretizar',tree_discr),
+        ('Onehot',onehot),
+        ('Model',model)
+    ]
+)
+
+model_pipeline.fit(X_train,y_train)
 # %%
 # ASSESS
 
 from sklearn import metrics
 
 #Aqui é na lista de exercicio
-y_train_predic = reg.predict(X_train_transf)
-y_train_proba = reg.predict_proba(X_train_transf)[:,1]
+y_train_predic = model_pipeline.predict(X_train)
+y_train_proba = model_pipeline.predict_proba(X_train)[:,1]
 
 acc_train = metrics.accuracy_score(y_train, y_train_predic)
 auc_train = metrics.roc_auc_score(y_train, y_train_proba)
+roc_train = metrics.roc_curve(y_train,y_train_proba)
 
 print("Acuracia Treino", acc_train)
 print("AUC Treino",auc_train)
@@ -139,27 +164,43 @@ print("AUC Treino",auc_train)
 
 # Aqui é a prova
 
-X_test_transf = tree_discr.transform(X_test[best_features])
-
-y_test_predic = reg.predict(X_test_transf)
-y_test_proba = reg.predict_proba(X_test_transf)[:,1]
+y_test_predic = model_pipeline.predict(X_test)
+y_test_proba = model_pipeline.predict_proba(X_test)[:,1]
 
 acc_test = metrics.accuracy_score(y_test, y_test_predic)
 auc_test = metrics.roc_auc_score(y_test, y_test_proba)
+roc_teste = metrics.roc_curve(y_test,y_test_proba)
+
 
 print("Acuracia Teste", acc_test)
 print("AUC Teste",auc_test)
 
 # OOT
 
-oot_transf = tree_discr.transform(oot[best_features])
-
-y_oot_predic = reg.predict(oot_transf)
-y_oot_proba = reg.predict_proba(oot_transf)[:,1]
+y_oot_predic = model_pipeline.predict(oot[features])
+y_oot_proba = model_pipeline.predict_proba(oot[features])[:,1]
 
 acc_oot = metrics.accuracy_score(oot[target], y_oot_predic)
 auc_oot = metrics.roc_auc_score(oot[target], y_oot_proba)
+roc_oot = metrics.roc_curve(oot[target],y_oot_proba)
 
 print("Acuracia oote", acc_oot)
 print("AUC oote",auc_oot)
+# %%
+plt.figure(dpi=400)
+plt.plot(roc_train[0],roc_train[1])
+plt.plot(roc_teste[0],roc_teste[1])
+plt.plot(roc_oot[0],roc_oot[1])
+plt.plot([0,1],[0,1],'--',color='black')
+plt.grid(True)
+plt.ylabel('Sensibilidade')
+plt.xlabel('1 - Especificidade')
+plt.title("Curva ROC")
+plt.legend([
+    f"Treino: {100*auc_train:.2f}",
+    f"Teste: {100*auc_test:.2f}",
+    f"Out-of-time: {100*auc_oot:.2f}"]
+    
+)
+plt.show()
 # %%
